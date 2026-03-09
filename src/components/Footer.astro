@@ -1,0 +1,23 @@
+---
+const currentYear = new Date().getFullYear();
+---
+
+<footer class="footer">
+  <div class="footer-content">
+    <h2>Mita.</h2>
+    <p>Membaca buku kini lebih mudah, dikonfigurasi sekali, dibaca kapan saja. <br/>Perpustakaan online generasi baru.</p>
+    
+    <div class="footer-bottom">
+      <p class="copyright">&copy; {currentYear} @mediacivitas. All rights reserved.</p>
+    </div>
+  </div>
+</footer>
+
+<style>
+  .footer { background-color: #1a1a1a; color: #ffffff; padding: 5rem 2rem 2rem; margin-top: 5rem; }
+  .footer-content { max-width: 1100px; margin: 0 auto; }
+  .footer h2 { font-size: 2.5rem; font-weight: 700; letter-spacing: -0.05em; margin-bottom: 1rem; }
+  .footer p { color: #aaaaaa; font-size: 1rem; max-width: 500px; }
+  .footer-bottom { margin-top: 4rem; padding-top: 2rem; border-top: 1px solid #333; display: flex; justify-content: space-between; }
+  .copyright { font-size: 0.85rem !important; }
+</style>

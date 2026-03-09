@@ -1,0 +1,33 @@
+/* src/styles/global.css */
+:root {
+  --primary: #eb6134; 
+  --bg: #ffffff;        /* Latar utama web */
+  --nav-bg: #ffffff;    /* Latar Navbar */
+  --text: #111111;      /* Teks default */
+  --text-muted: #555555;
+  --border: #e5e5e5;
+}
+
+/* HANYA LATAR UTAMA & NAVBAR YANG BERUBAH GELAP */
+[data-theme="dark"] {
+  --bg: #121212; 
+  --nav-bg: #1a1a1a;
+  --text: #ffffff; /* Teks navbar jadi putih */
+  --border: #333333;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body { 
+  font-family: 'Poppins', sans-serif; 
+  font-weight: 400; 
+  background-color: var(--bg); /* Ini yang akan merubah sela-sela komponen jadi gelap */
+  color: var(--text); 
+  overflow-x: hidden; 
+  line-height: 1.5; 
+  transition: background-color 0.3s, color 0.3s; 
+}
+
+h1, h2, h3, h4, h5, h6 { font-weight: 600; letter-spacing: -0.03em; }
+a { text-decoration: none; color: inherit; }
+ul { list-style: none; }
