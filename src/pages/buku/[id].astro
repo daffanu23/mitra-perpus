@@ -1,0 +1,267 @@
+---
+// src/pages/buku/[id].astro
+import Layout from '../../layouts/Layout.astro';
+import { getSupabaseServer } from '../../lib/supabase.js';
+
+const { id } = Astro.params;
+
+// Inisialisasi Supabase dengan gembok consent
+const consent = Astro.cookies.get('mitra-consent')?.value;
+let book = null;
+let recommendedBooks = [];
+
+if (consent === 'accepted') {
+  const supabase = getSupabaseServer(Astro.cookies);
+
+  // 1. Ambil data buku berdasarkan ID (Sesuai kolom database!)
+  const { data: fetchedBook } = await supabase
+    .from('books')
+    .select('*')
+    .eq('id', id)
+    .single();
+  
+  book = fetchedBook;
+
+  // 2. Ambil buku acak untuk sidebar
+  const { data: fetchedRecs } = await supabase
+    .from('books')
+    .select('*')
+    .neq('id', id)
+    .limit(4);
+    
+  recommendedBooks = fetchedRecs || [];
+}
+
+// Fallback data sementara jika database belum diisi
+const displayBook = book || {
+  title: "The Design of Everyday Things",
+  author: "Don Norman",
+  publisher: "-",
+  publish_year: "-",
+  isbn: "-",
+  description: "Buku wajib untuk para desainer. Membahas prinsip-prinsip desain kognitif yang membedakan produk yang mudah digunakan dengan yang membuat frustrasi.",
+  price: 0,
+  cover_url: "https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&q=80&w=300",
+  created_at: "2026-03-09T13:27:15.263Z"
+};
+
+const displayRecommendations = recommendedBooks.length > 0 ? recommendedBooks : [
+  { id: 2, title: "Ensiklopedia Anak Cerdas : Olahraga", date: "04-02-2026", cover_url: "https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&q=80&w=150" },
+  { id: 3, title: "The Domestic Goddess", date: "04-02-2026", cover_url: "https://images.unsplash.com/photo-1589829085413-56de8ae18c73?auto=format&fit=crop&q=80&w=150" },
+  { id: 4, title: "One Bullet Away", date: "04-02-2026", cover_url: "https://images.unsplash.com/photo-1614165936126-2ed18e471b3b?auto=format&fit=crop&q=80&w=150" }
+];
+
+// Format tanggal agar lebih cantik dibaca
+const formattedDate = new Date(displayBook.created_at).toLocaleDateString('id-ID', {
+  day: '2-digit', month: 'short', year: 'numeric'
+});
+---
+
+<Layout>
+  <div class="book-hero cycled-bg">
+    <div class="hero-overlay"></div>
+    <div class="hero-content section-wrapper">
+      <h1 class="text-sync">{displayBook.title}</h1>
+      <p class="breadcrumb text-sync">Home / Buku / <strong>{displayBook.title}</strong></p>
+    </div>
+  </div>
+
+  <div class="book-container section-wrapper">
+    <div class="book-layout">
+      
+      <div class="main-content">
+        <div class="cover-action-wrapper">
+          <div class="cover-image">
+            <img src={displayBook.cover_url} alt={`Cover ${displayBook.title}`} />
+          </div>
+          
+          <div class="action-bar">
+            <button class="action-btn cycled-bg btn-text-sync">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+              Pratinjau
+            </button>
+            
+            <div class="action-info">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+              {formattedDate}
+            </div>
+            
+            <button class="action-btn icon-only cycled-bg btn-text-sync" title="Simpan ke Pustakaku">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
+              <span>Simpan</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="detail-section">
+          <h2>Deskripsi Buku</h2>
+          <div class="modern-table">
+            <div class="table-row">
+              <div class="row-label">Judul</div>
+              <div class="row-value font-semibold">{displayBook.title}</div>
+            </div>
+            <div class="table-row">
+              <div class="row-label">Penulis</div>
+              <div class="row-value">{displayBook.author || '-'}</div>
+            </div>
+            <div class="table-row">
+              <div class="row-label">Penerbit</div>
+              <div class="row-value">{displayBook.publisher || '-'}</div>
+            </div>
+            <div class="table-row">
+              <div class="row-label">Tahun Terbit</div>
+              <div class="row-value">{displayBook.publish_year || '-'}</div>
+            </div>
+            <div class="table-row">
+              <div class="row-label">ISBN</div>
+              <div class="row-value">{displayBook.isbn || '-'}</div>
+            </div>
+            <div class="table-row">
+              <div class="row-label">Uraian</div>
+              <div class="row-value leading-relaxed">{displayBook.description || 'Tidak ada deskripsi.'}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <aside class="sidebar">
+        <div class="sidebar-card">
+          <form action="/search" class="sidebar-search">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <input type="text" name="q" placeholder="Cari Buku..." />
+          </form>
+
+          <div class="recommendation-list">
+            {displayRecommendations.map((rec) => (
+              <a href={`/buku/${rec.id}`} class="rec-item">
+                <img src={rec.cover_url} alt={`Cover ${rec.title}`} />
+                <div class="rec-info">
+                  <h4>{rec.title}</h4>
+                  <p>{rec.date || "04-02-2026"}</p>
+                </div>
+              </a>
+            ))}
+          </div>
+        </div>
+      </aside>
+
+    </div>
+  </div>
+</Layout>
+
+<style>
+  /* Global Layout */
+  .section-wrapper { padding: 0 2rem; max-width: 1400px; margin: 0 auto; }
+  
+  /* Animasi Cycled (Sync Homepage) */
+  .cycled-bg { animation: smoothColorCycle 10s infinite; }
+  
+  @keyframes smoothColorCycle {
+    0%, 15%   { background-color: #FFADAD; } 
+    20%, 35%  { background-color: #FFD6A5; } 
+    40%, 55%  { background-color: #FDFFB6; } 
+    60%, 75%  { background-color: #CAFFBF; } 
+    80%, 95%  { background-color: #9BF6FF; } 
+    100%      { background-color: #FFADAD; }
+  }
+
+  /* Kunci teks di atas elemen cycled agar selalu hitam */
+  .text-sync { color: #111111; }
+  .btn-text-sync { color: #111111; border: 2px solid rgba(0,0,0,0.1); }
+  
+  /* Hero Banner */
+  /* Ubah padding bawah dari 8rem jadi 4rem agar tidak terlalu kosong */
+  .book-hero { position: relative; padding: 6rem 0 4rem 0; overflow: hidden; text-align: center; border-bottom: 1px solid var(--border); transition: filter 0.3s; }
+  /* Supaya warna pastel tidak terlalu menyilaukan saat Dark Mode */
+  [data-theme="dark"] .book-hero { filter: brightness(0.7) saturate(1.2); }
+
+  .hero-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: radial-gradient(circle at center, rgba(255,255,255,0.2) 0%, transparent 70%); pointer-events: none; }
+  
+  .hero-content { position: relative; z-index: 10; }
+  .hero-content h1 { font-size: 3rem; font-weight: 700; margin-bottom: 1rem; letter-spacing: -0.03em; }
+  .breadcrumb { font-size: 0.95rem; opacity: 0.8; }
+  .breadcrumb strong { font-weight: 600; }
+
+  /* Grid Layout */
+  /* Ubah margin-top dari -4rem (negatif) jadi 3rem (positif) supaya turun ke bawah */
+  .book-container { margin-top: 3rem; position: relative; z-index: 20; padding-bottom: 6rem; }
+  .book-layout { display: grid; grid-template-columns: 1fr 380px; gap: 4rem; align-items: start; }
+
+  /* --- SISI KIRI --- */
+  .main-content { display: flex; flex-direction: column; gap: 3rem; }
+  
+  .cover-action-wrapper { background-color: var(--bg); padding: 2rem; border-radius: 32px; border: 1px solid var(--border); box-shadow: 0 20px 40px rgba(0,0,0,0.04); transition: background-color 0.3s; }
+  .cover-image { width: 100%; max-width: 350px; aspect-ratio: 2/3; margin: 0 auto 2rem auto; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+  .cover-image img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  
+  .action-bar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; border-top: 1px solid var(--border); padding-top: 1.5rem; transition: border-color 0.3s; }
+  .action-btn { display: flex; align-items: center; justify-content: center; gap: 0.6rem; padding: 0.8rem 1.5rem; border-radius: 999px; font-weight: 600; font-family: inherit; font-size: 0.95rem; cursor: pointer; transition: all 0.2s; }
+  .action-btn:hover { opacity: 0.8; transform: scale(0.98); }
+  
+  .action-info { display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; color: var(--text-muted); font-weight: 500; transition: color 0.3s; }
+  
+  .action-btn.icon-only span { display: inline-block; }
+
+  /* Tabel Deskripsi */
+  .detail-section h2 { font-size: 2rem; margin-bottom: 1.5rem; color: var(--text); transition: color 0.3s; }
+  .modern-table { display: flex; flex-direction: column; border: 1px solid var(--border); border-radius: 24px; overflow: hidden; transition: border-color 0.3s; }
+  .table-row { display: grid; grid-template-columns: 200px 1fr; border-bottom: 1px solid var(--border); transition: border-color 0.3s; }
+  .table-row:last-child { border-bottom: none; }
+  .table-row:nth-child(odd) { background-color: var(--bg-section); transition: background-color 0.3s; }
+  .table-row:nth-child(even) { background-color: var(--bg); transition: background-color 0.3s; }
+  
+  .row-label { padding: 1.2rem 1.5rem; font-weight: 600; color: var(--text); border-right: 1px solid var(--border); transition: color 0.3s, border-color 0.3s; }
+  .row-value { padding: 1.2rem 1.5rem; color: var(--text-muted); transition: color 0.3s; }
+  .font-semibold { font-weight: 600; color: var(--text); }
+  .leading-relaxed { line-height: 1.6; }
+
+  /* --- SISI KANAN --- */
+  .sidebar { position: sticky; top: 120px; }
+  .sidebar-card { background-color: var(--bg-section); border-radius: 32px; padding: 2rem; border: 1px solid var(--border); transition: background-color 0.3s, border-color 0.3s; }
+  
+  .sidebar-search { display: flex; align-items: center; gap: 0.8rem; background-color: var(--bg); border: 2px solid var(--border); padding: 0.8rem 1.2rem; border-radius: 999px; margin-bottom: 2rem; transition: border-color 0.3s, background-color 0.3s; }
+  .sidebar-search:focus-within { border-color: var(--text); }
+  .sidebar-search svg { color: var(--text-muted); }
+  .sidebar-search input { flex: 1; border: none; background: transparent; outline: none; color: var(--text); font-family: inherit; font-size: 0.95rem; }
+  
+  .recommendation-list { display: flex; flex-direction: column; gap: 1.5rem; }
+  .rec-item { display: flex; gap: 1rem; align-items: center; padding: 0.5rem; border-radius: 16px; transition: background-color 0.2s; }
+  .rec-item:hover { background-color: var(--bg); }
+  .rec-item img { width: 70px; aspect-ratio: 2/3; object-fit: cover; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+  .rec-info h4 { font-size: 0.95rem; color: var(--text); margin-bottom: 0.3rem; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; transition: color 0.3s; }
+  .rec-info p { font-size: 0.85rem; color: var(--text-muted); transition: color 0.3s; }
+
+  /* Responsivitas */
+  @media (max-width: 1024px) {
+    .book-layout { grid-template-columns: 1fr 320px; gap: 2rem; }
+    .book-hero { padding: 4rem 0 6rem 0; }
+    .hero-content h1 { font-size: 2.5rem; }
+  }
+  
+  @media (max-width: 768px) {
+    .book-layout { grid-template-columns: 1fr; margin-top: -2rem; }
+    .book-hero { padding: 3rem 0 4rem 0; }
+    .hero-content h1 { font-size: 2rem; }
+    
+    .cover-action-wrapper { padding: 1.5rem; border-radius: 24px; }
+    .table-row { grid-template-columns: 1fr; border-bottom: none; }
+    .row-label { border-right: none; border-bottom: 1px dashed var(--border); padding: 1rem 1.2rem 0.5rem 1.2rem; }
+    .row-value { padding: 0.5rem 1.2rem 1rem 1.2rem; border-bottom: 1px solid var(--border); }
+    .table-row:last-child .row-value { border-bottom: none; }
+    
+    .action-bar { flex-direction: column; align-items: stretch; }
+    .action-btn { justify-content: center; }
+    .action-info { justify-content: center; margin: 0.5rem 0; }
+    
+    .sidebar { position: static; }
+  }
+
+  /* --- FIX DARK MODE TABEL --- */
+  [data-theme="dark"] .modern-table { border-color: rgba(255, 255, 255, 0.15); }
+  [data-theme="dark"] .table-row { border-color: rgba(255, 255, 255, 0.1); }
+  [data-theme="dark"] .table-row:nth-child(odd) { background-color: rgba(255, 255, 255, 0.03); }
+  [data-theme="dark"] .table-row:nth-child(even) { background-color: transparent; }
+  [data-theme="dark"] .row-label { color: #e2e8f0; border-right-color: rgba(255, 255, 255, 0.1); }
+  [data-theme="dark"] .row-value { color: #cbd5e1; }
+  [data-theme="dark"] .font-semibold { color: #ffffff; }
+</style>

@@ -1,0 +1,83 @@
+---
+// src/components/CookieConsent.astro
+// Kita cek apakah server sudah menerima cookie consent dari user
+const consentCookie = Astro.cookies.get('mitra-consent')?.value;
+// Jika sudah ada keputusan (accepted/rejected), jangan render HTML banner ini sama sekali!
+if (consentCookie) {
+  return null;
+}
+---
+
+<div id="cookie-banner" class="cookie-consent show">
+  <div class="cookie-content">
+    <p class="cookie-title">🍪 Privasi & Keamanan Anda</p>
+    <p class="cookie-desc">
+      Kami memerlukan <em>cookies</em> untuk menjalankan fitur penting seperti Login dan Autentikasi. Tanpa persetujuan, Anda bisa menjelajahi koleksi buku, namun fitur Login akan dinonaktifkan.
+    </p>
+  </div>
+  <div class="cookie-actions">
+    <button id="reject-cookies" class="cookie-btn reject">Tolak</button>
+    <button id="accept-cookies" class="cookie-btn accept">Saya Mengerti</button>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const banner = document.getElementById('cookie-banner');
+    const acceptBtn = document.getElementById('accept-cookies');
+    const rejectBtn = document.getElementById('reject-cookies');
+
+    // 1. Tambahkan tipe data (: string) untuk menenangkan TypeScript
+    function setConsentCookie(value: string) {
+      // Cookie berlaku selama 30 hari
+      const d = new Date();
+      d.setTime(d.getTime() + (30*24*60*60*1000));
+      document.cookie = `mitra-consent=${value};expires=${d.toUTCString()};path=/`;
+      
+      // 2. Bungkus dengan pengecekan if (banner) agar aman dari null
+      if (banner) {
+        banner.classList.remove('show');
+      }
+      
+      setTimeout(() => {
+        // Segar ulang halaman agar Server Astro mendeteksi cookie baru ini
+        window.location.reload();
+      }, 300);
+    }
+
+    if (acceptBtn && rejectBtn) {
+      acceptBtn.addEventListener('click', () => setConsentCookie('accepted'));
+      rejectBtn.addEventListener('click', () => setConsentCookie('rejected'));
+    }
+  });
+</script>
+
+<style>
+  .cookie-consent {
+    position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%) translateY(50px);
+    background-color: var(--bg); border: 1px solid var(--border); box-shadow: 0 15px 40px rgba(0,0,0,0.12);
+    padding: 1.5rem 2rem; border-radius: 24px; display: flex; align-items: center; justify-content: space-between;
+    gap: 2.5rem; z-index: 9999; width: 90%; max-width: 800px; opacity: 0; pointer-events: none;
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.4s;
+  }
+  [data-theme="dark"] .cookie-consent { box-shadow: 0 15px 40px rgba(0,0,0,0.5); }
+  
+  .cookie-consent.show { transform: translateX(-50%) translateY(0); opacity: 1; pointer-events: auto; }
+  
+  .cookie-content { flex: 1; }
+  .cookie-title { font-weight: 700; color: var(--text); font-size: 1.05rem; margin-bottom: 0.4rem; }
+  .cookie-desc { font-size: 0.9rem; color: var(--text-muted); line-height: 1.5; margin: 0; }
+  
+  .cookie-actions { display: flex; gap: 1rem; }
+  .cookie-btn { border: none; padding: 0.8rem 1.8rem; border-radius: 999px; font-weight: 600; font-size: 0.95rem; cursor: pointer; transition: opacity 0.2s, transform 0.1s; font-family: inherit; white-space: nowrap; }
+  .cookie-btn:hover { opacity: 0.8; transform: scale(0.98); }
+  
+  .cookie-btn.accept { background-color: var(--text); color: var(--bg); }
+  .cookie-btn.reject { background-color: transparent; color: var(--text); border: 2px solid var(--border); }
+
+  @media (max-width: 768px) {
+    .cookie-consent { flex-direction: column; align-items: flex-start; bottom: 1rem; padding: 1.5rem; gap: 1.5rem; border-radius: 20px; }
+    .cookie-actions { width: 100%; flex-direction: column; }
+    .cookie-btn { width: 100%; }
+  }
+</style>
