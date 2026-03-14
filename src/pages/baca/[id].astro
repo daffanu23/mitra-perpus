@@ -1,0 +1,231 @@
+---
+// src/pages/baca/[id].astro
+import Layout from '../../layouts/Layout.astro';
+import { getSupabaseServer } from '../../lib/supabase.js';
+
+const { id } = Astro.params;
+const supabase = getSupabaseServer(Astro.cookies);
+
+// 1. Tarik data buku
+const { data: book, error: bookError } = await supabase
+  .from('books')
+  .select('*')
+  .eq('id', id)
+  .single();
+
+if (bookError || !book) {
+  return Astro.redirect('/search?error=not_found');
+}
+
+// 2. Cek Identitas & Role User
+const { data: { user } } = await supabase.auth.getUser();
+let userRole = 'user';
+
+if (user) {
+  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+  if (profile) userRole = profile.role || 'user';
+}
+
+// 3. LOGIKA AKSES
+let isPreview = true;
+let basePdfUrl = '';
+
+if (book.price === 0 || userRole === 'admin') {
+  isPreview = false;
+  basePdfUrl = book.pdf_full_url || book.pdf_preview_url; 
+} else {
+  isPreview = true;
+  basePdfUrl = book.pdf_preview_url;
+}
+
+const formattedPrice = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(book.price || 0);
+
+// MAGISNYA DI SINI: Kita biarkan browser memunculkan UI aslinya!
+// Kita hanya memberikan perintah awal untuk menyesuaikan lebar layar.
+const finalPdfUrl = basePdfUrl ? `${basePdfUrl}#view=FitH` : '';
+---
+
+<Layout>
+  <div class="native-reader-layout">
+    
+    <header class="app-header">
+      <div class="header-left">
+        <a href={`/buku/${book.id}`} class="back-btn" title="Kembali">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+          <span class="back-text">Kembali</span>
+        </a>
+        <div class="book-title-meta">
+          <h1>{book.title}</h1>
+          <span class="author">{book.author}</span>
+        </div>
+      </div>
+      
+      <div class="header-right">
+        {isPreview ? (
+          <span class="status-badge preview">Mode Pratinjau</span>
+        ) : (
+          <span class="status-badge full">Akses Penuh</span>
+        )}
+      </div>
+    </header>
+
+    <main class="native-pdf-container">
+      {finalPdfUrl ? (
+        <iframe 
+          src={finalPdfUrl} 
+          class="browser-pdf-iframe" 
+          title={`Membaca ${book.title}`}
+          allowfullscreen
+        ></iframe>
+      ) : (
+        <div class="empty-state">
+          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="9" y1="15" x2="15" y2="15"></line></svg>
+          <p>Dokumen PDF belum tersedia.</p>
+        </div>
+      )}
+    </main>
+
+    {isPreview && (
+      <div class="preview-banner">
+        <div class="banner-content">
+          <div class="banner-text">
+            <strong>Suka dengan buku ini?</strong>
+            <p>Anda sedang membaca pratinjau. Dapatkan akses penuh sekarang.</p>
+          </div>
+          <button class="buy-btn">Beli - {formattedPrice}</button>
+        </div>
+      </div>
+    )}
+
+  </div>
+</Layout>
+
+<style>
+  /* Bersihkan sisa layout web utama */
+  :global(body) { background-color: #111827 !important; margin: 0; padding: 0; overflow: hidden; }
+  :global(#main-navbar), :global(.footer) { display: none !important; }
+
+  /* Layout Utama */
+  .native-reader-layout {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    width: 100vw;
+    background-color: #525659; /* Warna abu-abu khas background PDF Chrome/Brave */
+  }
+
+  /* --- HEADER APP KITA --- */
+  .app-header {
+    height: 56px;
+    background-color: #1f2937; /* Warna gelap agar menyatu dengan UI browser */
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 1.5rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    z-index: 50;
+    flex-shrink: 0;
+  }
+
+  .header-left { display: flex; align-items: center; gap: 1.5rem; }
+  
+  .back-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #e5e7eb;
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 500;
+    padding: 0.4rem 0.8rem;
+    border-radius: 6px;
+    transition: background-color 0.2s;
+  }
+  .back-btn:hover { background-color: #374151; color: #ffffff; }
+
+  .book-title-meta { display: flex; flex-direction: column; }
+  .book-title-meta h1 { margin: 0; font-size: 0.95rem; font-weight: 600; color: #ffffff; line-height: 1.2; }
+  .author { font-size: 0.75rem; color: #9ca3af; }
+
+  .status-badge { font-size: 0.7rem; font-weight: 600; padding: 0.3rem 0.8rem; border-radius: 999px; }
+  .status-badge.preview { background-color: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+  .status-badge.full { background-color: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+
+  /* --- NATIVE IFRAME CONTAINER --- */
+  .native-pdf-container {
+    flex: 1;
+    position: relative;
+    width: 100%;
+    height: 100%;
+    /* Ini rahasianya: Iframe menguasai seluruh sisa layar di bawah header kita */
+  }
+
+  .browser-pdf-iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    display: block;
+  }
+
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: #9ca3af;
+  }
+  .empty-state svg { margin-bottom: 1rem; opacity: 0.5; }
+
+  /* --- BANNER BELI MELAYANG --- */
+  .preview-banner {
+    position: absolute;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(17, 24, 39, 0.95);
+    backdrop-filter: blur(10px);
+    border: 1px solid #374151;
+    padding: 1rem 1.5rem;
+    border-radius: 16px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+    z-index: 100;
+    width: 90%;
+    max-width: 600px;
+    animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translate(-50%, 40px); }
+    to { opacity: 1; transform: translate(-50%, 0); }
+  }
+
+  .banner-content { display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; }
+  .banner-text { display: flex; flex-direction: column; gap: 0.2rem; }
+  .banner-text strong { color: #ffffff; font-size: 0.95rem; }
+  .banner-text p { margin: 0; color: #9ca3af; font-size: 0.85rem; }
+  
+  .buy-btn {
+    background-color: #ffffff;
+    color: #111827;
+    border: none;
+    padding: 0.7rem 1.2rem;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: opacity 0.2s;
+  }
+  .buy-btn:hover { opacity: 0.8; }
+
+  /* Responsivitas */
+  @media (max-width: 768px) {
+    .header-right { display: none; }
+    .book-title-meta h1 { font-size: 0.85rem; max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .back-text { display: none; }
+    .preview-banner { bottom: 1rem; padding: 1rem; border-radius: 12px; }
+    .banner-content { flex-direction: column; text-align: center; gap: 1rem; }
+    .buy-btn { width: 100%; }
+  }
+</style>
