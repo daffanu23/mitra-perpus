@@ -9,6 +9,7 @@ const consent = Astro.cookies.get('mitra-consent')?.value;
 let isLoggedIn = false;
 let userRole = 'user';
 let userName = '';
+let userAvatar = ''; // Variabel baru untuk menampung URL Avatar
 
 // 2. GEMBOK KEAMANAN: Supabase HANYA boleh jalan kalau user sudah klik "Saya Mengerti"
 if (consent === 'accepted') {
@@ -18,23 +19,37 @@ if (consent === 'accepted') {
   isLoggedIn = !authError && !!user;
 
   if (isLoggedIn && user) {
+    // Ambil data profil dari tabel
     const { data: profile } = await supabaseServer
       .from('profiles')
       .select('username, role')
       .eq('id', user.id)
       .single();
       
+    // Setel Username & Role
     if (profile) {
       userRole = profile.role || 'user';
       userName = profile.username || user.email?.split('@')[0] || 'Member'; 
     } else {
       userName = user.email?.split('@')[0] || 'Member';
     }
+
+    // --- LOGIKA MENGAMBIL FOTO AVATAR ---
+    // 1. Coba cari foto asli bawaan dari Google (di dalam user_metadata)
+    const googleAvatarUrl = user.user_metadata?.avatar_url || user.user_metadata?.picture;
+    
+    // 2. Jika ada foto Google, pakai itu. Jika tidak, buat avatar custom dengan inisial nama
+    if (googleAvatarUrl) {
+      userAvatar = googleAvatarUrl;
+    } else {
+      // Menggunakan gaya 'initials' agar lebih profesional untuk user yang daftar manual
+      userAvatar = `https://api.dicebear.com/7.x/initials/svg?seed=${userName}&backgroundColor=0a2472&textColor=ffffff`;
+    }
   }
 }
 ---
 
-<nav class="navbar">
+<nav class="navbar" id="main-navbar">
   <div class="nav-brand">
     <a href="/" class="logo">Mita.</a>
   </div>
@@ -55,7 +70,7 @@ if (consent === 'accepted') {
       
       {/* Menu ini hanya akan muncul jika role di database benar-benar 'admin' */}
       {userRole === 'admin' && (
-        <li><a href="/tambah-buku" class="admin-link">Tambah buku</a></li>
+        <li><a href="/tambah-buku" class="admin-link btn-modern-outline" style="padding: 0.4rem 1.2rem; font-size: 0.85rem;">Tambah buku</a></li>
       )}
     </ul>
 
@@ -67,12 +82,12 @@ if (consent === 'accepted') {
           <a href="/profile" class="profile-info">
             <span>Hai, {userName}</span>
             <div class="avatar">
-              <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${userName}`} alt="Avatar" />
+              <img src={userAvatar} alt={`Avatar ${userName}`} />
             </div>
           </a>
           
-          <a href="/auth/logout" class="logout-btn" title="Keluar dari akun">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <a href="/auth/logout" class="btn-icon-round" style="width: 36px; height: 36px; border: none; background: color-mix(in oklch, var(--danger) 15%, transparent); color: var(--danger);" title="Keluar dari akun">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
               <polyline points="16 17 21 12 16 7"></polyline>
               <line x1="21" y1="12" x2="9" y2="12"></line>
@@ -80,14 +95,14 @@ if (consent === 'accepted') {
           </a>
         </div>
       ) : (
-        <a href="/login" class="login-btn">Login / Daftar</a>
+        <a href="/login" class="btn-modern" style="padding: 0.6rem 1.5rem;">Login / Daftar</a>
       )}
     </div>
   </div>
 </nav>
 
 <script>
-  // Vanilla JS simpel untuk interaktivitas tombol hamburger
+  // Script untuk Hamburger Menu
   const hamburgerBtn = document.getElementById('hamburger-btn');
   const navMenu = document.getElementById('nav-menu');
 
@@ -96,47 +111,71 @@ if (consent === 'accepted') {
       navMenu.classList.toggle('active');
     });
   }
+
+  // Efek Shadow Halus Saat Halaman Digulir (Scroll)
+  const navbar = document.getElementById('main-navbar');
+  
+  if (navbar) {
+    window.addEventListener('scroll', () => {
+      if (window.scrollY > 10) {
+        navbar.classList.add('scrolled');
+      } else {
+        navbar.classList.remove('scrolled');
+      }
+    });
+  }
 </script>
 
 <style>
-  .navbar { background-color: var(--nav-bg); color: var(--text); display: flex; justify-content: space-between; align-items: center; padding: 1.2rem 4rem; position: sticky; top: 0; z-index: 100; border-bottom: 1px solid var(--border); transition: background-color 0.3s; }
+  .navbar { 
+    background-color: color-mix(in oklch, var(--nav-bg) 95%, transparent); 
+    color: var(--text); 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    padding: 1.2rem 4rem; 
+    position: sticky; 
+    top: 0; 
+    z-index: 100; 
+    transition: background-color 0.3s, box-shadow 0.3s, padding 0.3s; 
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+  
+  .navbar.scrolled {
+    box-shadow: 0 4px 30px color-mix(in oklch, var(--text) 5%, transparent);
+    padding: 0.8rem 4rem; 
+  }
+
   .logo { font-size: 1.8rem; font-weight: 700; letter-spacing: -0.05em; }
   
   .nav-menu { display: flex; gap: 2.5rem; align-items: center; }
   .nav-links { display: flex; gap: 2.5rem; align-items: center; font-weight: 500; font-size: 0.95rem; margin: 0; padding: 0; }
-  .nav-links a:hover { opacity: 0.7; }
-  .admin-link { background: var(--border); padding: 0.4rem 1rem; border-radius: 999px; font-size: 0.85rem;}
+  .nav-links a { transition: color 0.2s; }
+  .nav-links a:hover { color: var(--text-muted); }
   
   .user-profile { display: flex; align-items: center; gap: 1.5rem; }
-  .profile-info { display: flex; align-items: center; gap: 0.8rem; font-weight: 500; }
-  .avatar { width: 36px; height: 36px; background: #eee; border-radius: 50%; overflow: hidden; }
-  .avatar img { width: 100%; height: 100%; object-fit: cover; }
-  /* Tambahkan di bawah gaya .avatar */
-  .profile-wrapper { display: flex; align-items: center; gap: 1rem; }
-  .logout-btn { display: flex; align-items: center; justify-content: center; color: var(--text-muted); padding: 0.4rem; border-radius: 8px; transition: all 0.2s; background: transparent; }
-  .logout-btn:hover { background-color: #ffeaea; color: #d32f2f; }
+  .profile-wrapper { display: flex; align-items: center; gap: 1.2rem; }
+  .profile-info { display: flex; align-items: center; gap: 0.8rem; font-weight: 500; transition: opacity 0.2s; }
+  .profile-info:hover { opacity: 0.8; }
   
-  /* Untuk Dark Mode: Hover tombol logout jadi merah gelap */
-  [data-theme="dark"] .logout-btn:hover { background-color: rgba(211, 47, 47, 0.2); color: #ff8a80; }
-  .login-btn { font-size: 0.95rem; font-weight: 600; background-color: var(--text); color: var(--bg); padding: 0.6rem 1.5rem; border-radius: 999px; transition: opacity 0.2s; }
-  .login-btn:hover { opacity: 0.8; }
+  .avatar { width: 38px; height: 38px; background: var(--bg-light); border-radius: 50%; overflow: hidden; border: 2px solid var(--bg); box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+  .avatar img { width: 100%; height: 100%; object-fit: cover; }
 
-  /* Tombol Hamburger disembunyikan di Desktop */
-  .hamburger { display: none; background: transparent; border: none; color: var(--text); cursor: pointer; padding: 0.5rem; }
+  .hamburger { display: none; background: transparent; border: none; color: var(--text); cursor: pointer; padding: 0.5rem; transition: transform 0.2s; }
+  .hamburger:hover { transform: scale(1.05); }
 
-  /* Breakpoint 1024px (Laptop Kecil / Tablet Landscape) */
   @media (max-width: 1024px) {
     .navbar { padding: 1.2rem 2rem; }
+    .navbar.scrolled { padding: 0.8rem 2rem; }
   }
   
-  /* Breakpoint 768px (Mobile / HP) */
   @media (max-width: 768px) {
     .navbar { padding: 1rem 1.5rem; flex-wrap: wrap; }
+    .navbar.scrolled { padding: 0.8rem 1.5rem; }
     
-    /* Munculkan Hamburger */
     .hamburger { display: block; }
     
-    /* Sembunyikan menu secara default, ubah jadi tumpukan ke bawah */
     .nav-menu { 
       display: none; 
       width: 100%; 
@@ -145,13 +184,12 @@ if (consent === 'accepted') {
       gap: 1.5rem; 
       padding-top: 1.5rem; 
       margin-top: 1rem; 
-      border-top: 1px solid var(--border); 
+      border-top: 1px solid color-mix(in oklch, var(--text) 10%, transparent); 
     }
     
-    /* Tampilkan saat tombol diklik (class 'active' ditambahkan via JS) */
     .nav-menu.active { display: flex; } 
     
     .nav-links { flex-direction: column; align-items: flex-start; gap: 1.5rem; width: 100%; }
-    .user-profile { width: 100%; justify-content: space-between; border-top: 1px dashed var(--border); padding-top: 1.5rem; }
+    .user-profile { width: 100%; justify-content: space-between; border-top: 1px dashed color-mix(in oklch, var(--text) 10%, transparent); padding-top: 1.5rem; }
   }
 </style>

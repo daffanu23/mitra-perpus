@@ -1,27 +1,89 @@
 /* src/styles/global.css */
+
 :root {
-  --primary: #eb6134; 
-  --bg: #ffffff;        /* Latar utama web */
-  --nav-bg: #ffffff;    /* Latar Navbar */
-  --text: #111111;      /* Teks default */
-  --text-muted: #555555;
-  --border: #e5e5e5;
+  /* --- LIGHT MODE --- (Diambil dari body.light) */
+  /* hsl (fallback color) */
+  --bg-dark: hsl(208 96% 90%);
+  --bg: hsl(208 100% 96%);
+  --bg-light: hsl(208 100% 100%);
+  --text: hsl(218 100% 6%);
+  --text-muted: hsl(205 62% 27%);
+  --highlight: hsl(207 100% 100%);
+  --border: hsl(207 35% 51%);
+  --border-muted: hsl(207 47% 63%);
+  --primary: hsl(202 100% 23%);
+  --secondary: hsl(35 100% 18%);
+  --danger: hsl(8 32% 41%);
+  --warning: hsl(51 46% 30%);
+  --success: hsl(150 37% 33%);
+  --info: hsl(217 34% 43%);
+  
+  /* oklch */
+  --bg-dark: oklch(0.92 0.04 244);
+  --bg: oklch(0.96 0.04 244);
+  --bg-light: oklch(1 0.04 244);
+  --text: oklch(0.15 0.08 244);
+  --text-muted: oklch(0.4 0.08 244);
+  --highlight: oklch(1 0.08 244);
+  --border: oklch(0.6 0.08 244);
+  --border-muted: oklch(0.7 0.08 244);
+  --primary: oklch(0.4 0.1 244);
+  --secondary: oklch(0.4 0.1 64);
+  --danger: oklch(0.5 0.08 30);
+  --warning: oklch(0.5 0.08 100);
+  --success: oklch(0.5 0.08 160);
+  --info: oklch(0.5 0.08 260);
+
+  /* Font & Nav Header */
+  --font-primary: 'AvantGarde', 'Poppins', sans-serif;
+  --nav-bg: var(--bg);
 }
 
-/* HANYA LATAR UTAMA & NAVBAR YANG BERUBAH GELAP */
 [data-theme="dark"] {
-  --bg: #121212; 
-  --nav-bg: #1a1a1a;
-  --text: #ffffff; /* Teks navbar jadi putih */
-  --border: #333333;
+  /* --- DARK MODE --- (Diambil dari :root) */
+  /* hsl (fallback color) */
+  --bg-dark: hsl(222 100% 3%);
+  --bg: hsl(211 100% 5%);
+  --bg-light: hsl(206 80% 8%);
+  --text: hsl(207 100% 96%);
+  --text-muted: hsl(207 60% 70%);
+  --highlight: hsl(206 43% 39%);
+  --border: hsl(205 62% 27%);
+  --border-muted: hsl(203 100% 15%);
+  --primary: hsl(207 76% 70%);
+  --secondary: hsl(29 63% 65%);
+  --danger: hsl(9 42% 65%);
+  --warning: hsl(51 29% 53%);
+  --success: hsl(148 27% 56%);
+  --info: hsl(217 46% 66%);
+  
+  /* oklch */
+  --bg-dark: oklch(0.1 0.04 244);
+  --bg: oklch(0.15 0.04 244);
+  --bg-light: oklch(0.2 0.04 244);
+  --text: oklch(0.96 0.08 244);
+  --text-muted: oklch(0.76 0.08 244);
+  --highlight: oklch(0.5 0.08 244);
+  --border: oklch(0.4 0.08 244);
+  --border-muted: oklch(0.3 0.08 244);
+  --primary: oklch(0.76 0.1 244);
+  --secondary: oklch(0.76 0.1 64);
+  --danger: oklch(0.7 0.08 30);
+  --warning: oklch(0.7 0.08 100);
+  --success: oklch(0.7 0.08 160);
+  --info: oklch(0.7 0.08 260);
+
+  --nav-bg: var(--bg-dark);
 }
+
+/* ... (Palet warna OKLCH Anda biarkan tetap di atas) ... */
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 body { 
-  font-family: 'Poppins', sans-serif; 
+  font-family: var(--font-primary); 
   font-weight: 400; 
-  background-color: var(--bg); /* Ini yang akan merubah sela-sela komponen jadi gelap */
+  background-color: var(--bg); 
   color: var(--text); 
   overflow-x: hidden; 
   line-height: 1.5; 
@@ -31,3 +93,53 @@ body {
 h1, h2, h3, h4, h5, h6 { font-weight: 600; letter-spacing: -0.03em; }
 a { text-decoration: none; color: inherit; }
 ul { list-style: none; }
+
+/* =========================================
+   CLEAN MINIMALIST BUTTONS (SaaS Style)
+========================================= */
+.btn-modern {
+  background-color: var(--bg-light); /* Warna background yang sangat halus */
+  color: var(--text);
+  /* Border super tipis yang hampir tidak terlihat, hanya untuk mempertegas bentuk */
+  border: 1px solid color-mix(in oklch, var(--text) 10%, transparent); 
+  padding: 0.8rem 1.8rem;
+  border-radius: 12px; /* Tidak 999px lagi, tapi slightly rounded seperti referensi */
+  font-weight: 500;
+  font-size: 0.95rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  transition: all 0.2s ease;
+  font-family: inherit;
+  box-shadow: 0 2px 4px color-mix(in oklch, var(--text) 2%, transparent);
+}
+
+.btn-modern:hover {
+  background-color: color-mix(in oklch, var(--text) 5%, var(--bg));
+  transform: translateY(-1px);
+}
+
+.btn-modern:active {
+  transform: translateY(0);
+}
+
+/* Tombol Ikon (Seperti tombol panah bulat di referensi) */
+.btn-icon-round {
+  background-color: transparent;
+  color: var(--text);
+  border: 1px solid color-mix(in oklch, var(--text) 15%, transparent);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-icon-round:hover {
+  background-color: color-mix(in oklch, var(--text) 5%, var(--bg));
+}

@@ -58,11 +58,11 @@ const formattedDate = new Date(displayBook.created_at).toLocaleDateString('id-ID
 ---
 
 <Layout>
-  <div class="book-hero cycled-bg">
+  <div class="book-hero">
     <div class="hero-overlay"></div>
     <div class="hero-content section-wrapper">
-      <h1 class="text-sync">{displayBook.title}</h1>
-      <p class="breadcrumb text-sync">Home / Buku / <strong>{displayBook.title}</strong></p>
+      <h1>{displayBook.title}</h1>
+      <p class="breadcrumb">Home / Buku / <strong>{displayBook.title}</strong></p>
     </div>
   </div>
 
@@ -153,7 +153,7 @@ const formattedDate = new Date(displayBook.created_at).toLocaleDateString('id-ID
   /* Global Layout */
   .section-wrapper { padding: 0 2rem; max-width: 1400px; margin: 0 auto; }
   
-  /* Animasi Cycled (Sync Homepage) */
+  /* Animasi Cycled (Hanya untuk tombol sekarang) */
   .cycled-bg { animation: smoothColorCycle 10s infinite; }
   
   @keyframes smoothColorCycle {
@@ -165,32 +165,35 @@ const formattedDate = new Date(displayBook.created_at).toLocaleDateString('id-ID
     100%      { background-color: #FFADAD; }
   }
 
-  /* Kunci teks di atas elemen cycled agar selalu hitam */
-  .text-sync { color: #111111; }
   .btn-text-sync { color: #111111; border: 2px solid rgba(0,0,0,0.1); }
   
-  /* Hero Banner */
-  /* Ubah padding bawah dari 8rem jadi 4rem agar tidak terlalu kosong */
-  .book-hero { position: relative; padding: 6rem 0 4rem 0; overflow: hidden; text-align: center; border-bottom: 1px solid var(--border); transition: filter 0.3s; }
-  /* Supaya warna pastel tidak terlalu menyilaukan saat Dark Mode */
-  [data-theme="dark"] .book-hero { filter: brightness(0.7) saturate(1.2); }
+  /* Hero Banner (Menggunakan warna tema) */
+  .book-hero { 
+    position: relative; 
+    padding: 6rem 0 4rem 0; 
+    background-color: var(--bg-light); 
+    overflow: hidden; 
+    text-align: center; 
+    border-bottom: 1px solid var(--border); 
+    transition: background-color 0.3s, border-color 0.3s; 
+  }
 
-  .hero-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: radial-gradient(circle at center, rgba(255,255,255,0.2) 0%, transparent 70%); pointer-events: none; }
+  .hero-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: radial-gradient(circle at center, rgba(255,255,255,0.03) 0%, transparent 70%); pointer-events: none; }
+  [data-theme="dark"] .hero-overlay { background: radial-gradient(circle at center, rgba(255,255,255,0.05) 0%, transparent 70%); }
   
   .hero-content { position: relative; z-index: 10; }
-  .hero-content h1 { font-size: 3rem; font-weight: 700; margin-bottom: 1rem; letter-spacing: -0.03em; }
-  .breadcrumb { font-size: 0.95rem; opacity: 0.8; }
-  .breadcrumb strong { font-weight: 600; }
+  .hero-content h1 { font-size: 3rem; font-weight: 700; margin-bottom: 1rem; letter-spacing: -0.03em; color: var(--text); transition: color 0.3s; }
+  .breadcrumb { font-size: 0.95rem; color: var(--text-muted); transition: color 0.3s; }
+  .breadcrumb strong { font-weight: 600; color: var(--text); }
 
   /* Grid Layout */
-  /* Ubah margin-top dari -4rem (negatif) jadi 3rem (positif) supaya turun ke bawah */
   .book-container { margin-top: 3rem; position: relative; z-index: 20; padding-bottom: 6rem; }
   .book-layout { display: grid; grid-template-columns: 1fr 380px; gap: 4rem; align-items: start; }
 
   /* --- SISI KIRI --- */
   .main-content { display: flex; flex-direction: column; gap: 3rem; }
   
-  .cover-action-wrapper { background-color: var(--bg); padding: 2rem; border-radius: 32px; border: 1px solid var(--border); box-shadow: 0 20px 40px rgba(0,0,0,0.04); transition: background-color 0.3s; }
+  .cover-action-wrapper { background-color: var(--bg); padding: 2rem; border-radius: 32px; border: 1px solid var(--border); box-shadow: 0 20px 40px rgba(0,0,0,0.04); transition: background-color 0.3s, border-color 0.3s; }
   .cover-image { width: 100%; max-width: 350px; aspect-ratio: 2/3; margin: 0 auto 2rem auto; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
   .cover-image img { width: 100%; height: 100%; object-fit: cover; display: block; }
   
@@ -217,10 +220,10 @@ const formattedDate = new Date(displayBook.created_at).toLocaleDateString('id-ID
 
   /* --- SISI KANAN --- */
   .sidebar { position: sticky; top: 120px; }
-  .sidebar-card { background-color: var(--bg-section); border-radius: 32px; padding: 2rem; border: 1px solid var(--border); transition: background-color 0.3s, border-color 0.3s; }
+  .sidebar-card { background-color: var(--bg-light); border-radius: 32px; padding: 2rem; border: 1px solid var(--border); transition: background-color 0.3s, border-color 0.3s; }
   
   .sidebar-search { display: flex; align-items: center; gap: 0.8rem; background-color: var(--bg); border: 2px solid var(--border); padding: 0.8rem 1.2rem; border-radius: 999px; margin-bottom: 2rem; transition: border-color 0.3s, background-color 0.3s; }
-  .sidebar-search:focus-within { border-color: var(--text); }
+  .sidebar-search:focus-within { border-color: var(--primary); }
   .sidebar-search svg { color: var(--text-muted); }
   .sidebar-search input { flex: 1; border: none; background: transparent; outline: none; color: var(--text); font-family: inherit; font-size: 0.95rem; }
   
