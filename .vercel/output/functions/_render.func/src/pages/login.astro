@@ -1,0 +1,308 @@
+---
+// src/pages/login.astro
+import Layout from '../layouts/Layout.astro';
+import { getSupabaseServer } from '../lib/supabase.js';
+
+const supabase = getSupabaseServer(Astro.cookies);
+
+// Kalau user sudah login, usir halus ke halaman depan
+const { data: { user } } = await supabase.auth.getUser();
+if (user) {
+  return Astro.redirect('/');
+}
+
+// Tangkap error dari URL (kalau ada gagal dari Google Callback)
+const urlError = Astro.url.searchParams.get('error');
+let errorMessage = urlError || '';
+let successMessage = '';
+
+if (Astro.request.method === 'POST') {
+  const formData = await Astro.request.formData();
+  const action = formData.get('action')?.toString(); 
+
+  // --- LOGIKA LOGIN GOOGLE ---
+  if (action === 'google') {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${Astro.url.origin}/auth/callback`,
+      },
+    });
+
+    if (error) {
+      errorMessage = error.message;
+    } else if (data.url) {
+      return Astro.redirect(data.url);
+    }
+  } 
+  // --- LOGIKA LOGIN/REGISTER EMAIL BIASA ---
+  else {
+    const email = formData.get('email')?.toString();
+    const password = formData.get('password')?.toString();
+
+    if (email && password) {
+      if (action === 'register') {
+        const { error } = await supabase.auth.signUp({ email, password });
+        if (error) errorMessage = error.message;
+        else successMessage = 'Registrasi berhasil! Silakan langsung login.';
+      } else if (action === 'login') {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) errorMessage = "Email atau password salah!";
+        else return Astro.redirect('/'); 
+      }
+    } else {
+      errorMessage = 'Email dan password wajib diisi!';
+    }
+  }
+}
+---
+
+<Layout>
+  <script type="module" src="https://unpkg.com/@lottiefiles/dotlottie-wc@0.3.0/dist/dotlottie-wc.js"></script>
+
+  <div class="auth-page section-wrapper">
+    <div class="auth-split-card">
+      
+      <div class="auth-content">
+        <div class="auth-header">
+          <h1 id="auth-title">Masuk ke Mita.</h1>
+          <p id="auth-subtitle">Lanjutkan membaca koleksi buku favorit Anda.</p>
+        </div>
+
+        {errorMessage && <div class="alert error">{errorMessage}</div>}
+        {successMessage && <div class="alert success">{successMessage}</div>}
+
+        <div class="forms-wrapper">
+          <form method="POST" class="auth-form">
+            <input type="hidden" name="action" id="form-action" value="login" />
+
+            <div class="input-group">
+              <label for="email">Email</label>
+              <input type="email" id="email" name="email" placeholder="nama@email.com" />
+            </div>
+
+            <div class="input-group">
+              <label for="password">Password</label>
+              <input type="password" id="password" name="password" placeholder="Minimal 6 karakter" minlength="6" />
+            </div>
+
+            <div class="checkbox-group">
+              <input type="checkbox" id="remember" name="remember" />
+              <label for="remember">Ingat saya</label>
+            </div>
+
+            <button type="submit" class="btn-modern" id="submit-btn" style="width: 100%;">Masuk</button>
+          </form>
+
+          <div class="divider">
+            <span>Atau</span>
+          </div>
+
+          <form method="POST" class="google-form">
+            <input type="hidden" name="action" id="google-action" value="google" />
+            <button type="submit" class="google-btn">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="20px" height="20px">
+                <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/>
+                <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/>
+                <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/>
+                <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"/>
+              </svg>
+              <span id="google-btn-text">Masuk dengan Google</span>
+            </button>
+          </form>
+        </div>
+
+        <div class="auth-footer">
+          <p id="toggle-text">Belum punya akun? <button type="button" id="toggle-btn-inner">Daftar disini</button></p>
+        </div>
+      </div>
+
+      <div class="auth-media">
+        <div class="media-bg">
+          <dotlottie-wc 
+            src="https://lottie.host/49331709-31aa-40b6-8863-5b4bd4558327/MV3A444BWr.lottie" 
+            autoplay 
+            loop 
+            style="width: 100%; height: 100%; object-fit: cover;">
+          </dotlottie-wc>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</Layout>
+
+<script>
+  let isLoginMode = true;
+
+  function handleToggle() {
+    isLoginMode = !isLoginMode;
+    
+    const formAction = document.getElementById('form-action') as HTMLInputElement;
+    const authTitle = document.getElementById('auth-title');
+    const authSubtitle = document.getElementById('auth-subtitle');
+    const submitBtn = document.getElementById('submit-btn');
+    const toggleText = document.getElementById('toggle-text');
+    const emailInput = document.getElementById('email') as HTMLInputElement;
+    const passwordInput = document.getElementById('password') as HTMLInputElement;
+    const googleBtnText = document.getElementById('google-btn-text');
+
+    if (formAction && authTitle && authSubtitle && submitBtn && toggleText && emailInput && passwordInput && googleBtnText) {
+      emailInput.required = true;
+      passwordInput.required = true;
+
+      if (isLoginMode) {
+        formAction.value = 'login';
+        authTitle.textContent = 'Masuk ke Mita.';
+        authSubtitle.textContent = 'Lanjutkan membaca koleksi buku favorit Anda.';
+        submitBtn.textContent = 'Masuk';
+        googleBtnText.textContent = 'Masuk dengan Google';
+        toggleText.innerHTML = 'Belum punya akun? <button type="button" id="toggle-btn-inner">Daftar disini</button>';
+      } else {
+        formAction.value = 'register';
+        authTitle.textContent = 'Daftar Akun Baru';
+        authSubtitle.textContent = 'Mulai bangun perpustakaan digital Anda sendiri.';
+        submitBtn.textContent = 'Daftar';
+        googleBtnText.textContent = 'Daftar dengan Google';
+        toggleText.innerHTML = 'Sudah punya akun? <button type="button" id="toggle-btn-inner">Masuk disini</button>';
+      }
+
+      const newToggleBtn = document.getElementById('toggle-btn-inner');
+      if (newToggleBtn) newToggleBtn.addEventListener('click', handleToggle);
+    }
+  }
+
+  const initialToggleBtn = document.getElementById('toggle-btn-inner');
+  if (initialToggleBtn) initialToggleBtn.addEventListener('click', handleToggle);
+</script>
+
+<style>
+  /* Layout Wrapper utama */
+  .auth-page { display: flex; justify-content: center; align-items: center; min-height: calc(100vh - 80px); padding: 4rem 2rem; }
+  
+  /* Split Card - Disesuaikan dengan gaya Clean SaaS */
+  .auth-split-card { 
+    display: flex; 
+    background-color: var(--bg); 
+    border-radius: 32px; 
+    width: 100%; 
+    max-width: 1100px; 
+    min-height: 600px; 
+    box-shadow: 0 10px 40px color-mix(in oklch, var(--text) 5%, transparent); 
+    overflow: hidden; 
+  }
+  
+  /* Sisi Kiri (Form) */
+  .auth-content { flex: 1; padding: 5rem 4rem; display: flex; flex-direction: column; justify-content: center; max-width: 500px; margin: 0 auto; width: 100%; }
+  
+  .auth-header { margin-bottom: 2.5rem; }
+  .auth-header h1 { font-size: 2.5rem; font-weight: 700; color: var(--text); margin-bottom: 0.5rem; letter-spacing: -0.03em; }
+  .auth-header p { color: var(--text-muted); font-size: 1rem; }
+
+  /* Alert Messages */
+  .alert { padding: 1rem; border-radius: 12px; margin-bottom: 1.5rem; font-size: 0.9rem; font-weight: 500; text-align: center; }
+  .alert.error { background-color: color-mix(in oklch, var(--danger) 15%, transparent); color: var(--danger); border: 1px solid color-mix(in oklch, var(--danger) 30%, transparent); }
+  .alert.success { background-color: color-mix(in oklch, var(--success) 15%, transparent); color: var(--success); border: 1px solid color-mix(in oklch, var(--success) 30%, transparent); }
+
+  /* Form Elements */
+  .forms-wrapper { display: flex; flex-direction: column; gap: 1rem; }
+  .auth-form { display: flex; flex-direction: column; gap: 1.5rem; }
+  
+  .input-group { display: flex; flex-direction: column; gap: 0.6rem; }
+  .input-group label { font-size: 0.9rem; font-weight: 600; color: var(--text); }
+  .input-group input { 
+    padding: 0.9rem 1.2rem; 
+    border-radius: 12px; 
+    border: 1px solid color-mix(in oklch, var(--text) 15%, transparent); 
+    background-color: transparent; 
+    color: var(--text); 
+    font-family: inherit; 
+    font-size: 0.95rem; 
+    transition: all 0.3s; 
+    outline: none; 
+  }
+  .input-group input:focus { 
+    border-color: var(--text); 
+    box-shadow: 0 0 0 4px color-mix(in oklch, var(--text) 5%, transparent);
+  }
+  
+  /* Checkbox Ingat Saya */
+  .checkbox-group { display: flex; align-items: center; gap: 0.6rem; }
+  .checkbox-group input { width: 16px; height: 16px; accent-color: var(--text); cursor: pointer; }
+  .checkbox-group label { font-size: 0.85rem; color: var(--text-muted); font-weight: 500; cursor: pointer; transition: color 0.2s; }
+  .checkbox-group label:hover { color: var(--text); }
+
+  /* Divider (Atau) */
+  .divider { 
+    display: flex; 
+    align-items: center; 
+    text-align: center; 
+    color: var(--text-muted); 
+    font-size: 0.85rem; 
+    margin: 1rem 0; 
+  }
+  .divider::before, .divider::after { 
+    content: ''; 
+    flex: 1; 
+    border-bottom: 1px solid color-mix(in oklch, var(--text) 10%, transparent); 
+  }
+  .divider span { padding: 0 1rem; }
+
+  /* --- STYLING KHUSUS TOMBOL GOOGLE --- */
+  .google-btn { 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    gap: 0.8rem; 
+    background-color: var(--bg); 
+    color: var(--text); 
+    border: 1px solid color-mix(in oklch, var(--text) 15%, transparent); 
+    border-radius: 12px; 
+    padding: 0.9rem; 
+    font-size: 0.95rem; 
+    font-weight: 600; 
+    cursor: pointer; 
+    width: 100%; 
+    font-family: inherit;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    /* Shadow lembut bawaan */
+    box-shadow: 0 4px 10px color-mix(in oklch, var(--text) 3%, transparent);
+  }
+  
+  .google-btn:hover { 
+    background-color: var(--bg-light); 
+    border-color: color-mix(in oklch, var(--text) 25%, transparent); 
+    transform: translateY(-2px); 
+    /* Shadow membesar dan lebih tegas saat di-hover */
+    box-shadow: 0 8px 20px color-mix(in oklch, var(--text) 8%, transparent);
+  }
+
+  .google-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 5px color-mix(in oklch, var(--text) 4%, transparent);
+  }
+
+  /* Footer Text */
+  .auth-footer { margin-top: 2.5rem; text-align: center; color: var(--text-muted); font-size: 0.9rem; }
+  .auth-footer button { background: none; border: none; color: var(--text); font-weight: 600; font-family: inherit; font-size: 0.9rem; cursor: pointer; padding: 0 0.2rem; transition: color 0.2s; }
+  .auth-footer button:hover { color: var(--text-muted); }
+
+  /* SISI KANAN (Media Lottie) */
+  .auth-media { flex: 1.2; background-color: var(--bg-light); padding: 2rem; display: flex; align-items: center; justify-content: center; }
+  .media-bg { width: 100%; height: 100%; max-height: 500px; display: flex; align-items: center; justify-content: center; border-radius: 24px; overflow: hidden; }
+
+  /* Responsivitas Layar */
+  @media (max-width: 1024px) {
+    .auth-split-card { max-width: 900px; }
+    .auth-content { padding: 4rem 3rem; }
+  }
+
+  @media (max-width: 768px) {
+    .auth-page { padding: 2rem 1rem; align-items: flex-start; }
+    .auth-split-card { flex-direction: column; border: none; box-shadow: none; background: transparent; }
+    
+    .auth-media { display: none; } 
+    
+    .auth-content { padding: 3rem 1.5rem; background-color: var(--bg); border: 1px solid color-mix(in oklch, var(--text) 10%, transparent); border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+  }
+</style>
