@@ -8,7 +8,6 @@ const { id } = Astro.params;
 // Inisialisasi Supabase
 const consent = Astro.cookies.get('mitra-consent')?.value;
 let book = null;
-let recommendedBooks = [];
 
 // Gunakan server client jika consent diterima, jika tidak gunakan public client
 const supabase = (consent === 'accepted') 
@@ -31,7 +30,7 @@ const { data: fetchedRecs } = await supabase
   .neq('id', id)
   .limit(4);
   
-recommendedBooks = fetchedRecs || [];
+const recommendedBooks = fetchedRecs || [];
 
 // Fallback data HANYA jika database benar-benar kosong atau ID tidak ditemukan
 const displayBook = book || {
@@ -46,12 +45,6 @@ const displayBook = book || {
   cover_url: "https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&q=80&w=300",
   created_at: new Date().toISOString()
 };
-
-const displayRecommendations = recommendedBooks.length > 0 ? recommendedBooks : [
-  { id: 2, title: "Ensiklopedia Anak Cerdas : Olahraga", date: "04-02-2026", cover_url: "https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&q=80&w=150" },
-  { id: 3, title: "The Domestic Goddess", date: "04-02-2026", cover_url: "https://images.unsplash.com/photo-1589829085413-56de8ae18c73?auto=format&fit=crop&q=80&w=150" },
-  { id: 4, title: "One Bullet Away", date: "04-02-2026", cover_url: "https://images.unsplash.com/photo-1614165936126-2ed18e471b3b?auto=format&fit=crop&q=80&w=150" }
-];
 
 // Format tanggal
 const formattedDate = new Date(displayBook.created_at).toLocaleDateString('id-ID', {
@@ -137,17 +130,21 @@ const buttonText = isFree ? "Baca Buku (Gratis)" : "Baca Pratinjau";
             <input type="text" name="q" placeholder="Cari buku lain..." />
           </form>
 
-          <h3 class="sidebar-title">Rekomendasi</h3>
+          <h3 class="sidebar-title">Buku Lainnya</h3>
           <div class="recommendation-list">
-            {displayRecommendations.map((rec) => (
-              <a href={`/buku/${rec.id}`} class="rec-item">
-                <img src={rec.cover_url} alt={`Cover ${rec.title}`} />
-                <div class="rec-info">
-                  <h4>{rec.title}</h4>
-                  <p>{rec.author || "Penulis Tidak Diketahui"}</p>
-                </div>
-              </a>
-            ))}
+            {recommendedBooks.length > 0 ? (
+              recommendedBooks.map((rec) => (
+                <a href={`/buku/${rec.id}`} class="rec-item">
+                  <img src={rec.cover_url} alt={`Cover ${rec.title}`} />
+                  <div class="rec-info">
+                    <h4>{rec.title}</h4>
+                    <p>{rec.author || "Penulis Tidak Diketahui"}</p>
+                  </div>
+                </a>
+              ))
+            ) : (
+              <p class="empty-state">Tidak ada buku lainnya</p>
+            )}
           </div>
         </div>
       </aside>
@@ -281,6 +278,8 @@ const buttonText = isFree ? "Baca Buku (Gratis)" : "Baca Pratinjau";
   .rec-item img { width: 65px; aspect-ratio: 2/3; object-fit: cover; border-radius: 8px; box-shadow: 0 4px 10px color-mix(in oklch, var(--text) 5%, transparent); }
   .rec-info h4 { font-size: 0.95rem; font-weight: 600; color: var(--text); margin-bottom: 0.3rem; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
   .rec-info p { font-size: 0.8rem; color: var(--text-muted); }
+
+  .empty-state { font-size: 0.9rem; color: var(--text-muted); font-style: italic; }
 
   /* Responsivitas */
   @media (max-width: 1024px) {
