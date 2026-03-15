@@ -3,48 +3,43 @@
 import ThemeToggle from './ThemeToggle.jsx';
 import { getSupabaseServer } from '../lib/supabase.js';
 
-// 1. CEK PERSETUJUAN COOKIE TERLEBIH DAHULU!
+// 1. Cek persetujuan cookie (untuk keperluan tracking/marketing jika ada nanti)
 const consent = Astro.cookies.get('mitra-consent')?.value;
 
 let isLoggedIn = false;
 let userRole = 'user';
 let userName = '';
-let userAvatar = ''; // Variabel baru untuk menampung URL Avatar
+let userAvatar = ''; 
 
-// 2. GEMBOK KEAMANAN: Supabase HANYA boleh jalan kalau user sudah klik "Saya Mengerti"
-if (consent === 'accepted') {
-  const supabaseServer = getSupabaseServer(Astro.cookies);
-  const { data: { user }, error: authError } = await supabaseServer.auth.getUser();
-  
-  isLoggedIn = !authError && !!user;
+// 2. Supabase Auth diperbolehkan jalan karena ini 'Strictly Necessary' untuk fitur login
+const supabaseServer = getSupabaseServer(Astro.cookies);
+const { data: { user }, error: authError } = await supabaseServer.auth.getUser();
 
-  if (isLoggedIn && user) {
-    // Ambil data profil dari tabel
-    const { data: profile } = await supabaseServer
-      .from('profiles')
-      .select('username, role')
-      .eq('id', user.id)
-      .single();
-      
-    // Setel Username & Role
-    if (profile) {
-      userRole = profile.role || 'user';
-      userName = profile.username || user.email?.split('@')[0] || 'Member'; 
-    } else {
-      userName = user.email?.split('@')[0] || 'Member';
-    }
+isLoggedIn = !authError && !!user;
 
-    // --- LOGIKA MENGAMBIL FOTO AVATAR ---
-    // 1. Coba cari foto asli bawaan dari Google (di dalam user_metadata)
-    const googleAvatarUrl = user.user_metadata?.avatar_url || user.user_metadata?.picture;
+if (isLoggedIn && user) {
+  // Ambil data profil dari tabel
+  const { data: profile } = await supabaseServer
+    .from('profiles')
+    .select('username, role')
+    .eq('id', user.id)
+    .single();
     
-    // 2. Jika ada foto Google, pakai itu. Jika tidak, buat avatar custom dengan inisial nama
-    if (googleAvatarUrl) {
-      userAvatar = googleAvatarUrl;
-    } else {
-      // Menggunakan gaya 'initials' agar lebih profesional untuk user yang daftar manual
-      userAvatar = `https://api.dicebear.com/7.x/initials/svg?seed=${userName}&backgroundColor=0a2472&textColor=ffffff`;
-    }
+  // Setel Username & Role
+  if (profile) {
+    userRole = profile.role || 'user';
+    userName = profile.username || user.email?.split('@')[0] || 'Member'; 
+  } else {
+    userName = user.email?.split('@')[0] || 'Member';
+  }
+
+  // --- LOGIKA MENGAMBIL FOTO AVATAR ---
+  const googleAvatarUrl = user.user_metadata?.avatar_url || user.user_metadata?.picture;
+  
+  if (googleAvatarUrl) {
+    userAvatar = googleAvatarUrl;
+  } else {
+    userAvatar = `https://api.dicebear.com/7.x/initials/svg?seed=${userName}&backgroundColor=0a2472&textColor=ffffff`;
   }
 }
 ---

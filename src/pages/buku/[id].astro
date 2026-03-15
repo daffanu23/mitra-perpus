@@ -1,49 +1,50 @@
 ---
 // src/pages/buku/[id].astro
 import Layout from '../../layouts/Layout.astro';
-import { getSupabaseServer } from '../../lib/supabase.js';
+import { supabase as supabasePublic, getSupabaseServer } from '../../lib/supabase.js';
 
 const { id } = Astro.params;
 
-// Inisialisasi Supabase dengan gembok consent
+// Inisialisasi Supabase
 const consent = Astro.cookies.get('mitra-consent')?.value;
 let book = null;
 let recommendedBooks = [];
 
-if (consent === 'accepted') {
-  const supabase = getSupabaseServer(Astro.cookies);
+// Gunakan server client jika consent diterima, jika tidak gunakan public client
+const supabase = (consent === 'accepted') 
+  ? getSupabaseServer(Astro.cookies) 
+  : supabasePublic;
 
-  // 1. Ambil data buku berdasarkan ID
-  const { data: fetchedBook } = await supabase
-    .from('books')
-    .select('*')
-    .eq('id', id)
-    .single();
+// 1. Ambil data buku berdasarkan ID (Selalu fetch dari database!)
+const { data: fetchedBook } = await supabase
+  .from('books')
+  .select('*')
+  .eq('id', id)
+  .single();
+
+book = fetchedBook;
+
+// 2. Ambil buku acak untuk sidebar
+const { data: fetchedRecs } = await supabase
+  .from('books')
+  .select('*')
+  .neq('id', id)
+  .limit(4);
   
-  book = fetchedBook;
+recommendedBooks = fetchedRecs || [];
 
-  // 2. Ambil buku acak untuk sidebar
-  const { data: fetchedRecs } = await supabase
-    .from('books')
-    .select('*')
-    .neq('id', id)
-    .limit(4);
-    
-  recommendedBooks = fetchedRecs || [];
-}
-
-// Fallback data sementara jika database belum diisi
+// Fallback data HANYA jika database benar-benar kosong atau ID tidak ditemukan
 const displayBook = book || {
   id: "demo-1",
-  title: "The Design of Everyday Things",
-  author: "Don Norman",
+  title: "Buku Tidak Ditemukan",
+  author: "-",
   publisher: "-",
   publish_year: "-",
   isbn: "-",
-  description: "Buku wajib untuk para desainer. Membahas prinsip-prinsip desain kognitif yang membedakan produk yang mudah digunakan dengan yang membuat frustrasi.",
+  description: "Maaf, data buku yang Anda cari tidak tersedia di perpustakaan kami.",
   price: 0,
   cover_url: "https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&q=80&w=300",
-  created_at: "2026-03-09T13:27:15.263Z"
+  created_at: new Date().toISOString()
 };
 
 const displayRecommendations = recommendedBooks.length > 0 ? recommendedBooks : [
